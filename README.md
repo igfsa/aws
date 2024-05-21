@@ -148,7 +148,7 @@ Calculadora de custos: https://calculator.aws/#/
 
 ### Iniciando uma instância ###
 
-&xrArr; A inicialização de uma instância pode ser feita no console web. Serviços &rarr; EC2 &rarr; Instâncias &rarr; Executar uma instância.
+&xrArr; A inicialização de uma instância pode ser feita no console web. Serviços &rarr; EC2 &rarr; Instâncias &rarr; Instâncias &rarr; Executar instâncias.
 
 &xrArr; É necessário selecionar uma imagem da AWS (AMI) para a máquina, o tipo de instância, criar um par de chaves (login, que deve ser baixado e armazenado para acesso), gerenciar informações de rede e armazenamento dentre outros. 
 
@@ -162,6 +162,8 @@ Os valores de security-group-ids e subnet-id podem ser encontrados respectivamen
 
 `$ sudo chmod 400 'arquivo_chave_par'`
 
+&xrArr; Após a alteração das permissões do arquivo, é possível se conectar a instância via terminal de uma máquina local.
+
 `$ ssh -i 'arquivo_chave_par' ec2-user@ip_publico`
 
 Após a criação é possível nomear a instância.
@@ -174,7 +176,7 @@ Após a criação é possível nomear a instância.
 
 ---
 
-### Desligamento e Encerramento - Shutdown Behavior e Terminate Protection ###
+### Desligamento e Encerramento - Shutdown Behavior, Stop Protection e Terminate Protection ###
 
 &xrArr; Ao finalizar o uso de uma máquina criada ela pode ser interrompida ou encerrada. A máquina encerrada não pode ser utilizada novamente e tem os dados excluídos. Já a máquina interrompida pode ser reiniciada.
 
@@ -192,9 +194,11 @@ Após a criação é possível nomear a instância.
 
 `$ aws ec2 terminate-instances --instance-ids 'id_instancia'`
 
+&xrArr; **Para encerrar uma instância é necessário que a proteção contra encerramento e contra interrupção (desligamento) estejam desativadas.**
+
 ---
 
-### AMI's - Criação e compartilhamento ###
+### AMIs - Criação e compartilhamento ###
 
 &xrArr; Além das imagens de sistemas operacionais já disponibilizadas pela AWS ou disponíveis no Marketplace, também é possível criar imagem de uma máquina feita pelo usuário. 
 
@@ -213,3 +217,123 @@ Os comandos acima indicam o terminal bash para executar os códigos que realizam
 &xrArr; Após a criação é possível visualizar a AMI criada. EC2 &rarr; Imagens &rarr; AMIs.
 
 &xrArr; Ao localizar a AMI e selecioná-la, basta marcar a opção de executar instância dessa imagem. Também é possível informar a imagem desejada no processo comum de instância. 
+
+#### Criação de AMIs com o AWS CLI ####
+
+&xrArr; Também é possível criar AMIs utilizando o AWS CLI
+
+`$ aws ec2 create-image --instance-id "i-xxxxxx" --name "nome_imagem" --description "Descrição"`
+
+No campo instance-id é passado o id da instância que servirá de base para a imagem.
+
+&xrArr; Com a imagem criada, uma instância para aplicação da imagem pode ser criada normalmente, apenas com o id de imagem criado sendo passado como parâmetro.
+
+#### Compartilhamento de AMIs ####
+
+&xrArr; AMIs por padrão são criadas privadas, ou seja, apenas o criador pode utilizar a AMI. Também estão disponíveis apenas na região de criação. É possível compartilhar AMIs entre outras contas e regiões. 
+
+&xrArr; AMIs criptografadas e AMIs com código de produto de cobrança associados, como Windows AMIs também não podem ser copiadas. 
+
+&xrArr; O compartilhamento de AMIs pode ser feito através das ações da instância na opção Editar opções da AMI. Na página aparece o campo de Configurações de compartilhamento da AMI, onde é possível selecionar como público ou privado. Ao selecionar pública, qualquer pessoa pode ter acesso à AMI, já ao manter privada é possível compartilhar para pessoas específicas através da opção Contas compartilhadas.
+
+&xrArr; Para compartilhar entre diferentes regiões é necessário utilizar a opção Copiar AMI. Dentro das opções para este processo, existe um campo de seleção de Região de destino. Ao marcar uma região diferente da região original da AMI, a imagem estará disponível em outra região. É possível selecionar se a imagem será criptografada ou não. Imagens criptografadas não permitem cópias por outros usuários. 
+
+&xrArr; Uma AMI possui um snapshot atrelado a ela que é envolvido no processo de compartilhamento. 
+
+&xrArr; O snapshot da AMI é uma forma a qual é possível criar uma AMI de uma AMI que foi compartilhada criptografada. Ao receber a AMI criptografada, é possível iniciar uma instância utilizando o snapshot e criar uma imagem dessa instância. Os snapshots estão disponíveis em EC2 &rarr; Elastic Block Store &rarr; Snapshots.
+
+### Tags ###
+
+&xrArr; São rótulos atribuídos através de chave:valor.
+
+&xrArr; Tags permitem caracterizar os recursos de diferente formas, por exemplo ambiente, proprietários e outros. É muito utilizado em recursos em massa. 
+
+&xrArr; Ao criar uma nova tag com uma chave já existente, o novo valor subistiuirá o antigo. Por exemplo se um recurso tem uma tag "tipo" com valor "vm", se for atribuido a tag "tipo" com o valor "db", o recurso terá apenas uma tag "tipo" e seu valor será "db"
+
+&xrArr; Tags possuem algumas restrições e regras
+
+* Número máximo por recursos de 50
+* Em todo recurso cada tag deve ser exclusiva
+* Comprimento máximo de 128 caracteres (UTF-8) por chave
+* Valor máximo da chave de 256 caracteres (UTF-8)
+* Case sensitive
+* **O prefixo "aws:" é reservado para uso pela AWS. Não é possível editar ou excluir essa chave e seu valor.**
+
+&xrArr; Tags podem ser criadas na criação de uma instancia ou através da aba de tags de uma instância já existente. Nesta aba também é possível gerenciar tags já existentes. 
+
+### Elastic Block Store (EBS) ###
+
+&xrArr; O EBS é um serviço de armazenamento em blocos de alta performance projetado para o uso juntamente com instâncias EC2. Pode ser colocado como o disco virtual de máquinas virtuais EC2.
+
+&xrArr; Volumes EBS não são globais e devem estar na mesma zona de disponibilidade da instância que está vinculado. 
+
+&xrArr; Volumes EBS, por funcionarem como um disco virtual em uma instância, semelhante a um disco rígido em uma instância, permitem que:
+
+* mais de um esteja atrelado a uma instância;
+* um mesmo volume seja reaproveitado em outras instâncias;
+
+
+&xrArr; Também existem benefícios:
+
+* Disponibilidade de dados: ao criar um EBS ele é automaticamente replicado dentro da zona de disponibilidade.
+* Persistência de dados: um volume EBS é armazenado a parte da instância e por isso é possível manter seus dados armazenados após o fim da instância. Cabe lembrar que como o armazenamento reserva um espaço constantemente, independente do uso ou não da instância, enquanto o volume está registrado na Amazon, ele é cobrado. 
+* Criptografia de dados: é possível criar volumes com criptografia simples com o recurso Criptografia de Amazon EBS.
+* Snapshots: é possível criar snapshots de volumes EBS, salvando os dados no volume para o Amazon S3. O Snapshot pode ser armazenado repetidamente em várias zonas de disponibilidade.
+* Flexibilidade: os volumes do EBS permitem alterações de configurações reais durante sua produção
+
+#### Tipos de volumes EBS ####
+
+&xrArr; Os tipos de volumes EBS são baseados na característica física do recurso utilizado pela Amazon, sendo estes SSD ou HDD.
+
+1. **Volumes baseados em SSD:** otimizados para cargas de trabalho de transação envolvendo operações de leitura e gravação frequentes com o tamanho pequeno de entrada e saída, onde o atributo dominante de desempenho é IOPS (Inputs Outputs Per Second)
+    1. **SSD-Backed General Purpose (gp2)** SSD's de uso geral
+        * Volume SSD de uso geral com equilíbrio de preço e desempenho para uma ampla variedade de cargas de trabalho.
+        * Baixa latência (ms).
+        * Tamanhos entre 1 GB e 16 TB.
+        * Mínimo de 100 e máximo de 3.000 IOPS.
+        * Base de 3 IOPS por GB (por exemplo para um disco de 50 GB, será atribuído um valor de 150 IOPS).    
+    2. **SSD-Backed General Purpose (gp3)** SSD's de uso geral (seleção padrão da AWS)
+        * Volume SSD de uso geral com equilíbrio de preço e desempenho para uma ampla variedade de cargas de trabalho, otimizado em relação ao gp2.
+        * Baixa latência (ms).
+        * Tamanhos entre 1 GB e 16 TB.
+        * Mínimo de 3.000 e máximo de 16.000 IOPS.
+        * Razão máxima de IOPS provisionados para o tamanho é de 500:1 (Ou seja, para um disco de 10 GB o máximo de IOPS é de 5.000).
+    3. **SSD-Backed Provisioned IOPS (io1)** SSD's com melhorias para taxas mais altas de IOPS
+        * Volume de SSD de alto desempenho para cargas de trabalho de missão crítica de baixa latência ou alto desempenho.
+        * Possui tamanho mínimo de 4 GB e máximo de 16 TB.
+        * Mínimo de 100 e mÁximo de 64.000 IOPS.
+        * Razão máxima de IOPS provisionados para o tamanho é de 50:1 (Ou seja, para um disco de 100 GB o máximo de IOPS é de 5.000). A quantidade é inserida manualmente.
+    4. **SSD-Backed Provisioned IOPS (io2)** SSD's com melhorias para taxas mais altas de IOPS
+        * Volume de SSD de alto desempenho para cargas de trabalho de missão crítica de baixa latência ou alto desempenho, otimizado em relação ao io1.
+        * Possui tamanho mínimo de 4 GB e máximo de 64 TB.
+        * Mínimo de 100 e máximo de 256.000 IOPS. 
+        * Razão máxima de IOPS provisionados para o tamanho é de 1.000:1 (Ou seja, para um disco de 10 GB o máximo de IOPS é de 10.000). 
+
+2. **Volumes baseados em HDD:** otimizados para grandes cargas de trabalho de streaming de dados nas quais as taxas de transferências (medidas em MiB/s) é uma medida de desempenho melhor que IOPS
+    1. **Throughput otimizado (st1)** HDD's de uso geral para armazenamento
+        * Volume HDD de baixo custo projetado para cargas de trabalho acessadas com frequência e com altas taxas de transferência.
+        * Possui tamanho mínimo de 500 GB e máximo de 16 TB.
+        * Máximo de 500 IOPS.
+    2. **Cold HDD (sc1)** HDD's para armazenamento de dados com pouco acesso (Disco Frio)
+        * Volume de HDD com o menor custo projetado para cargas de trabalho acessadas com menor frequência.
+        * Possui tamanho mínimo de 500 GB e máximo de 16 TB.
+        * Máximo de 250 IOPS.
+   * **Ambos tipos de discos não podem ser configurados como um disco para sistema**
+
+#### Criação, modificação e vinculação de volumes EBS ####
+
+&xrArr; A criação de volumes EBS pode ser feita na criação de instâncias ou na área do EBS. 
+
+&xrArr; O procedimento de criar uma instância (Serviços &rarr; EC2 &rarr; Instâncias &rarr; Instâncias &rarr; Executar instâncias) possui uma aba de armazenamento onde é possível criar volumes e adicionar volumes já existentes. Para a raiz do sistema a criação de um novo disco é obrigatória. Caso seja necessário utilizar configurações de disco já predefinidas, é possível selecionar uma imagem para ser clonada nesse disco. Apenas discos do tipo SSD podem ser usados na raiz. Além da raiz, também podem ser criados ou adicionados outros discos (que já podem ser de tipo HDD). Neste momento também pode ser selecionada a opção de excluir ou não o disco (por padrão vem marcado 'Sim').
+
+&xrArr; Criar o volume separadamente da instância pode ser feito em Serviços &rarr; EC2 &rarr; Elastic Block Store &rarr; Volumes &rarr; Criar Volume. Ao criar o volume é necessário inserir as configurações necessárias de cada tipo de volume e se o volume deve ser criptografado e também é possível criar o volume com base em uma imagem já existente. 
+
+&xrArr; Na aba de volumes (Serviços &rarr; EC2 &rarr; Elastic Block Store &rarr; Volumes) é possível ver os volumes já existentes, suas características e usos. Ao selecionar um volume individualmente é possível, além de monitoramento mais detalhado, modificar suas configurações.
+
+&xrArr; Adicionar volumes já existentes em um disco pode ser feito na aba de volumes ao selecionar o volume individualmente.
+
+&xrArr; Todos os processos também podem ser feitos via AWS cli. 
+
+&xrArr; O comando a seguir permite criar um novo volume.
+
+`$ aws ec2 create-volume --volume-type "tipo-do-volume" --size "tamanho-do-volume" --availability-zone "zona-para-criação"`
