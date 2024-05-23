@@ -196,6 +196,24 @@ Após a criação é possível nomear a instância.
 
 &xrArr; **Para encerrar uma instância é necessário que a proteção contra encerramento e contra interrupção (desligamento) estejam desativadas.**
 
+&xrArr; As operações de alterar proteção contra encerramento e interrupção podem ser feita via terminal. 
+
+* Ativar proteção contra interrupção 
+ 
+  `aws ec2 modify-instance-attribute --instance-id i-xxxxxxxxx --disable-api-stop`
+
+* Desativar proteção contra interrupção 
+  
+  `aws ec2 modify-instance-attribute --instance-id i-xxxxxxxxx --no-disable-api-stop`
+
+* Ativar proteção contra encerramento 
+  
+  `aws ec2 modify-instance-attribute --instance-id i-xxxxxxxxx --disable-api-termination `
+
+* Desativar proteção contra encerramento 
+  
+  `aws ec2 modify-instance-attribute --instance-id i-xxxxxxxxx --no-disable-api-termination `
+
 ---
 
 ### AMIs - Criação e compartilhamento ###
@@ -337,3 +355,37 @@ No campo instance-id é passado o id da instância que servirá de base para a i
 &xrArr; O comando a seguir permite criar um novo volume.
 
 `$ aws ec2 create-volume --volume-type "tipo-do-volume" --size "tamanho-do-volume" --availability-zone "zona-para-criação"`
+
+&xrArr; Também é possível vincular um volume via cli.
+
+`$ aws ec2 attach-volume --volume-id vol-xxxxxxxxxx --instance-id i-xxxxxxxxxx --device 'ponto para montagem do volume'`
+
+O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por convenção de nomenclatura de disco.
+
+#### Exclusão de volumes EBS ####
+
+&xrArr; Para excluir um volume primeiro o mesmo deve ser desvinculado da máquina. **Inicialmente deve ser avaliado se o volume está em uso no sistema.** O processo de desvincular pode ser feito via console web na aba de volumes (Serviços &rarr; EC2 &rarr; Elastic Block Store &rarr; Volumes). Na aba de Ações aparece a opção de desassociar volume. 
+
+&xrArr; Também pode ser feito via terminal.
+
+`aws ec2 detach-volume --volume-id vol-xxxxxxxxxxx`
+
+&xrArr; Para a exclusão de um volume, o processo pode ser feito através do mesmo caminho para o processo de desassociação pelo console web (Serviços &rarr; EC2 &rarr; Elastic Block Store &rarr; Volumes). Ao selecionar um volume é mostrada uma opção de Excluir.
+
+&xrArr; Também pode ser feito via terminal.
+
+`aws ec2 detach-volume --volume-id vol-xxxxxxxxxxx`
+
+### Snapshots ###
+
+&xrArr; Snapshots são capturas das informações de um volume em determinado momento. Funcionam armazenando os dados do volume no momento de criação do snapshot em um Bucket S3. Em novos snapshots desse volume o processo é feito de maneira recursiva, ou seja, são armazenadas apenas as alterações em relação ao snapshot anterior. 
+
+<img src="./media/snapshot.png" width="500">
+
+
+
+
+
+
+
+
