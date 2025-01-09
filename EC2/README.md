@@ -392,4 +392,37 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
 
 &xrArr; Para associar um endereço elástico à uma instância, é necessário acessar as opções de rede da instância e atribuir um endereço já criado a instância. 
 
+## Elastic Load Balance (ELB) ##
+
+&xrArr; O ELB distribui automaticamente o tráfego de entrada entre vários destinos, como instâncias de EC2, contêineres e endereços IP em uma ou mais zonas de disponibilidade.
+
+&xrArr; Possui a capacidade de auto escalonar de acordo com a demanda solicitada no tráfego de entrada. Porém este recurso precisa de tempo para se adaptar, então em caso de um aumento muito grande de tráfego de entrada em um curto período de tempo, ele não responderá na mesma proporção e pode ocorrer travamentos ou instabilidade no sistema. Caso exista alguma demanda programada que possa gerar um aumento de carga desse tipo, é necessário solicitar a AWS a readequação dos recursos antes do momento da demanda. 
+
+&xrArr; Permite utilizar health checks para os destinos, visando garantir a integridade de onde o trafego terminará. 
+
+<img src="../media/load-balance.png" width="500">
+
+&rarr; Na imagem é representado o modelo de funcionamento básico do serviço Load Balance. A requisição é enviada para o Load Balancer, que redireciona de acordo com as regras de controle de carga para o destino e realiza o health check desse destino. 
+
+&xrArr; Possui um FDQN de acesso único, permite uso de TLS e permite configurações públicas e privadas.
+
+&xrArr; Compatível com 4 tipos de balanceadores:
+
+ * Application load balance
+ * Network load balance
+ * Gateway load balance
+ * Classic load balance (Legado)
+
+### Application Load Balance (ALB) ###
+
+&xrArr; Atua na camada de aplicação, sendo mais recomendado para balanceamento de tráfego HTTP e HTTPS. Trabalha com múltiplas zonas. 
+
+&xrArr; Permite roteamento avançado. 
+
+&xrArr; Não possui endereço IP estático. O endereço ip do cliente não é visualizado nos destinos (targets), apenas o endereço do LB é disponibilizado. Caso necessário, é possível encontrar o IP de um cliente nos logs do LB, armazenado em um Bucket S3.
+
+&xrArr; Permite a utilização de stickiness, recurso que quando ativo, ao enviar uma solicitação para um destino, trava essa solicitação nesse destino até que ela seja concluída. Importante para situações como sites dinâmicos, manipulação de dados, preenchimento de formulários e similares.  
+
+
+
 
