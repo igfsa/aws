@@ -394,7 +394,7 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
 
 ## Elastic Load Balance (ELB) ##
 
-&xrArr; O ELB distribui automaticamente o tráfego de entrada entre vários destinos, como instâncias de EC2, contêineres e endereços IP em uma ou mais zonas de disponibilidade (todos são recursos multi zonas).
+&xrArr; O ELB distribui automaticamente o tráfego de entrada entre vários destinos, como instâncias de EC2, contêineres e endereços IP em uma ou mais zonas de disponibilidade (todos são recursos multi zonas). Os destinos idealmente são alocados em múltiplas zonas, para garantir a estabilidade do sistema em caso de falha de uma zona ou destino. 
 
 &xrArr; Possui a capacidade de auto escalonar de acordo com a demanda solicitada no tráfego de entrada. Porém este recurso precisa de tempo para se adaptar, então em caso de um aumento muito grande de tráfego de entrada em um curto período de tempo, ele não responderá na mesma proporção e pode ocorrer travamentos ou instabilidade no sistema. Caso exista alguma demanda programada que possa gerar um aumento de carga desse tipo, é necessário solicitar a AWS a readequação dos recursos antes do momento da demanda. 
 
@@ -413,6 +413,39 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
  * Gateway load balance
  * Classic load balance (Legado)
 
+### Targets Groups ###
+
+&xrArr; Targets Groups são os destinos de um LB e são utilizados em todo tipo de LB. Os destinos de um mesmo target group podem estar em múltiplas zonas.
+
+&xrArr; Podem ser criados através do menu EC2 &rarr; Targets Groups &rarr; Create target group.
+
+&xrArr; Em sua criação é necessário indicar o tipo de destino, sendo possível selecionar Instâncias, Endereços IP, Funções lambda e ALB.
+
+&xrArr; Ao selecionar Instâncias ou Endereços IP, o tipo de protocolo deve ser informado sendo:
+
+ * HTTP (para ALB's)
+ * HTTPS (para ALB's)
+ * TCP (para NLB's)
+ * TLS (para NLB's)
+ * UDP (para NLB's)
+ * TCP_UDP (para NLB's)
+ * GENEVE (para GLB's)
+
+&xrArr; Os Healths Checks são configurados na criação dos Targets Groups. 
+
+&xrArr; Após essas configurações, as instâncias devem ser atreladas. 
+
+&xrArr; Depois de criado, é possível editar as configurações de tráfego do Target Group, atuando com o direcionamento aos destinos do target group. É possível selecionar as opções de:
+ 
+ * Round Robin (envia cada vez para um dos destinos, sequencialmente)
+ * Least outstanding resources (envia para o destino com a menor quantidade de carga)
+ * Weighted random (envia aleatoriamente, identificando e evitando anomalias)
+
+&xrArr; Também permite configurar stickiness, que irá atuar com os destinos do target group. 
+
+&xrArr; Para as configurações de tráfego e stickiness de um target group, ambas atuam para os destinos do target group, ou seja, caso sejam instâncias, atuam em relação as instâncias, enquanto as mesmas configurações no LB atuam em relação aos targets groups. Assim, no caso de stickiness, sua configuração em um LB garante que uma mesma solicitação seja sempre enviada para o mesmo target group, enquanto que a configuração no target group, garante que a solicitação seja enviada sempre para o mesmo destino (uma instância por exemplo).
+
+
 ### Application Load Balance (ALB) ###
 
 &xrArr; Atua na camada de aplicação, sendo mais recomendado para balanceamento de tráfego HTTP e HTTPS. 
@@ -430,7 +463,26 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
  * Path: Pode ser colocado um caminho na requisição. Exemplo: `meusite.com/target`
  * Origem e Destino: Através dessas informações é possível determinar o target através do Load Balancer. 
 
+
 #### Criando um ALB ####
+
+&xrArr; Para configurar um ALB, se faz necessário a configuração de um Target Group, com destinos já existentes, a [criação de um Security Group](../VPC/README.md#security-groups) incluindo todos os Targets, e outro para o Load Balancer, além da criação do Load Balancer em si. 
+
+&xrArr; O Security Group para os targets devem possuir uma regra de entrada do Security Group do LB e o Security Group do Load Balancer deve possuir uma regra de saída com destino para o Security Group com os targets. 
+
+&xrArr; Na [criação do Target Group](#targets-groups) para o ALB, o tipo de protocolo a ser utilizado é HTTP ou HTTPS.
+
+&xrArr; A criação de um ALB é acessada da mesma forma que todos tipos, em EC2 &rarr; Load Balancing &rarr; Load Balancers &rarr; Crate load balancer. 
+
+&xrArr; Na criação do Load Balancer, configurações de Rede (pública ou interna, tipo de endereço IP), Mapeamento de Rede, Grupos de Rede, Segurança (VPC e Security Group), Listeners e Routing são necessárias. É importante na configuração de Mapeamento de Rede que as zonas dos destinos sejam incluídas. Em Listeners, a regra de encaminhamento é inserida, sendo necessário indicar o Target Group e o protocolo e a porta a serem utilizados no destino. Cada listener é relativo a uma regra de protocolo e porta e pode enviar para múltiplos targets. É importante que as configurações de segurança e entrada e saída entre o TG e o LB estejam de acordo.
+
+&xrArr; Após a criação, é possível configurar atributos do Load Balancer (dentre eles configuração para logs) e configurações de Mapeamento de Rede (Edit subnets permite alterar as zonas relativas ao Load Balancer), Listeners e regras (Permitindo ativação de stickiness e permitindo alterar a ação de roteamento, incluindo redirecionamento de url e retorno de resposta fixa) e Segurança (permite alterar Security Groups e regras). 
+
+#### Roteamento avançado ####
+
+&xrArr; Ao criar o Load Balancer
+
+---
 
 ### Network Load Balance (NLB) ###
 
@@ -465,35 +517,4 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
 
 &xrArr; Em um GLB, a regra para encaminhamento é gerada através da tabela de roteamento VPC.
 
-### Targets Groups ###
-
-&xrArr; Targets Groups são os destinos de um LB e são utilizados em todo tipo de LB.
-
-&xrArr; Podem ser criados através do menu EC2 &rarr; Targets Groups &rarr; Create target group.
-
-&xrArr; Em sua criação é necessário indicar o tipo de destino, sendo possível selecionar Instâncias, Endereços IP, Funções lambda e ALB.
-
-&xrArr; Ao selecionar Instâncias ou Endereços IP, o tipo de protocolo deve ser informado sendo:
-
- * HTTP (para ALB's)
- * HTTPS (para ALB's)
- * TCP (para NLB's)
- * TLS (para NLB's)
- * UDP (para NLB's)
- * TCP_UDP (para NLB's)
- * GENEVE (para GLB's)
-
-&xrArr; Os Healths Checks são configurados na criação dos Targets Groups. 
-
-&xrArr; Após essas configurações, as instâncias devem ser atreladas. 
-
-&xrArr; Depois de criado, é possível editar as configurações de tráfego do Target Group, atuando com o direcionamento aos destinos do target group. É possível selecionar as opções de:
- 
- * Round Robin (envia cada vez para um dos destinos, sequencialmente)
- * Least outstanding resources (envia para o destino com a menor quantidade de carga)
- * Weighted random (envia aleatoriamente, identificando e evitando anomalias)
-
-&xrArr; Também permite configurar stickiness, que irá atuar com os destinos do target group. 
-
-&xrArr; Para as configurações de tráfego e stickiness de um target group, ambas atuam para os destinos do target group, ou seja, caso sejam instâncias, atuam em relação as instâncias, enquanto as mesmas configurações no LB atuam em relação aos targets groups. Assim, no caso de stickiness, sua configuração em um LB garante que uma mesma solicitação seja sempre enviada para o mesmo target group, enquanto que a configuração no target group, garante que a solicitação seja enviada sempre para o mesmo destino (uma instância por exemplo).
 
