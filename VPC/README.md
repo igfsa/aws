@@ -16,4 +16,4 @@
 * Origem ou destino 
 * Descrição (Opcional) 
 
-
+&xrArr; A criação de um Security Group pode ser feita em VPC &rarr; Security &rarr; Security Groups Create new security group ou EC2 &rarr; Network & Security &rarr; Security Groups &rarr; Create new security group.

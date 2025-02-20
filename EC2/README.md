@@ -394,7 +394,7 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
 
 ## Elastic Load Balance (ELB) ##
 
-&xrArr; O ELB distribui automaticamente o tráfego de entrada entre vários destinos, como instâncias de EC2, contêineres e endereços IP em uma ou mais zonas de disponibilidade.
+&xrArr; O ELB distribui automaticamente o tráfego de entrada entre vários destinos, como instâncias de EC2, contêineres e endereços IP em uma ou mais zonas de disponibilidade (todos são recursos multi zonas).
 
 &xrArr; Possui a capacidade de auto escalonar de acordo com a demanda solicitada no tráfego de entrada. Porém este recurso precisa de tempo para se adaptar, então em caso de um aumento muito grande de tráfego de entrada em um curto período de tempo, ele não responderá na mesma proporção e pode ocorrer travamentos ou instabilidade no sistema. Caso exista alguma demanda programada que possa gerar um aumento de carga desse tipo, é necessário solicitar a AWS a readequação dos recursos antes do momento da demanda. 
 
@@ -415,7 +415,7 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
 
 ### Application Load Balance (ALB) ###
 
-&xrArr; Atua na camada de aplicação, sendo mais recomendado para balanceamento de tráfego HTTP e HTTPS. Trabalha com múltiplas zonas. 
+&xrArr; Atua na camada de aplicação, sendo mais recomendado para balanceamento de tráfego HTTP e HTTPS. 
 
 &xrArr; Permite roteamento avançado. 
 
@@ -423,6 +423,77 @@ O parâmetro device deve iniciar com `sd` ou `xvd`, seguidos de alguma letra por
 
 &xrArr; Permite a utilização de stickiness, recurso que quando ativo, ao enviar uma solicitação para um destino, trava essa solicitação nesse destino até que ela seja concluída. Importante para situações como sites dinâmicos, manipulação de dados, preenchimento de formulários e similares.  
 
+&xrArr; Em um ALB, as regras possíveis para encaminhamento são: 
 
+ * Roudin Robin (padrão): Envia alternadamente uma requisição para cada target, dividindo igualmente o número de requisições em cada. 
+ * Cabeçalho HTTP: No cabeçalho da requisição HTTP pode ser incluído o target para a requisição. Pode ser usado por exemplo em um Load Balancer que envia as requisições para targets com funções diferentes.
+ * Path: Pode ser colocado um caminho na requisição. Exemplo: `meusite.com/target`
+ * Origem e Destino: Através dessas informações é possível determinar o target através do Load Balancer. 
 
+#### Criando um ALB ####
+
+### Network Load Balance (NLB) ###
+
+&xrArr; Atua na camada de transporte, sendo mais recomendada para balanceamento de tráfego TCP e UDP. 
+
+&xrArr; Pode lidar com milhões de requisições por segundo, sendo o que mais suporta requisições por segundo. 
+
+&xrArr; Possui um endereço IP estático por subnet (recurso disponível apenas nesse modelo de LB) e permite preservar o endereço IP do cliente (Se configurado). Também é possível encontrar o IP de um cliente nos logs do LB, armazenado em um Bucket S3.
+
+&xrArr; Em um NLB, as regras possíveis para encaminhamento são: 
+
+ * Protocolo
+ * Endereço IP
+ * Porta 
+ * Número de sequência TCP
+
+### Gateway Load Balance (GLB) ###
+
+&xrArr; Atua na camada de rede, sendo mais recomendada para balanceamento de tráfego IP. Trabalha com múltiplas zonas.
+
+&xrArr; Permite o gerenciamento de Appliances Virtuais.
+
+&xrArr; Utiliza-se do protocolo GENEVE na porta 6081 dos targets. Portanto, é necessário que os Appliances possuam esse protocolo para serem utilizados.
+
+&xrArr; Permite o uso de stickiness e também possui o registro de log.
+
+&xrArr; O funcionamento deste LB é um pouco diferente dos demais. 
+
+<img src="../media/gateway_lb.png" width="500">
+
+&rarr; Realiza um roteamento do tráfego através da tabela de roteamento VPC, encaminhando a requisição a partir da origem para um GLB que encapsula o tráfego pelo protocolo GENEVE e envia para os Appliances e realiza todo o processo de maneira reversa até a chegada no destino.
+
+&xrArr; Em um GLB, a regra para encaminhamento é gerada através da tabela de roteamento VPC.
+
+### Targets Groups ###
+
+&xrArr; Targets Groups são os destinos de um LB e são utilizados em todo tipo de LB.
+
+&xrArr; Podem ser criados através do menu EC2 &rarr; Targets Groups &rarr; Create target group.
+
+&xrArr; Em sua criação é necessário indicar o tipo de destino, sendo possível selecionar Instâncias, Endereços IP, Funções lambda e ALB.
+
+&xrArr; Ao selecionar Instâncias ou Endereços IP, o tipo de protocolo deve ser informado sendo:
+
+ * HTTP (para ALB's)
+ * HTTPS (para ALB's)
+ * TCP (para NLB's)
+ * TLS (para NLB's)
+ * UDP (para NLB's)
+ * TCP_UDP (para NLB's)
+ * GENEVE (para GLB's)
+
+&xrArr; Os Healths Checks são configurados na criação dos Targets Groups. 
+
+&xrArr; Após essas configurações, as instâncias devem ser atreladas. 
+
+&xrArr; Depois de criado, é possível editar as configurações de tráfego do Target Group, atuando com o direcionamento aos destinos do target group. É possível selecionar as opções de:
+ 
+ * Round Robin (envia cada vez para um dos destinos, sequencialmente)
+ * Least outstanding resources (envia para o destino com a menor quantidade de carga)
+ * Weighted random (envia aleatoriamente, identificando e evitando anomalias)
+
+&xrArr; Também permite configurar stickiness, que irá atuar com os destinos do target group. 
+
+&xrArr; Para as configurações de tráfego e stickiness de um target group, ambas atuam para os destinos do target group, ou seja, caso sejam instâncias, atuam em relação as instâncias, enquanto as mesmas configurações no LB atuam em relação aos targets groups. Assim, no caso de stickiness, sua configuração em um LB garante que uma mesma solicitação seja sempre enviada para o mesmo target group, enquanto que a configuração no target group, garante que a solicitação seja enviada sempre para o mesmo destino (uma instância por exemplo).
 
